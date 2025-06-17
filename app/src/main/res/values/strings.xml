@@ -1,0 +1,26 @@
+<resources>
+    <!-- Application name -->
+    <string name="app_name">Leitor</string>
+
+    <!-- Sort by title -->
+    <string-array name="sort_options">
+        <item>A-Z</item>
+        <item>Z-A</item>
+    </string-array>
+
+    <!-- Sort by date -->
+    <string-array name="date_options">
+        <item>+ recente</item>
+        <item>+ antigo</item>
+    </string-array>
+
+    <!-- Sort by category -->
+    <string-array name="category_options">
+        <item>categoria</item>
+        <item>Fantasia</item>
+        <item>Ficção científica</item>
+        <item>Romance</item>
+        <item>História</item>
+        <item>Biografia</item>
+    </string-array>
+</resources>

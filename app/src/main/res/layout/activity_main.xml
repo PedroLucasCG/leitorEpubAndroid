@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/main"
+    android:background="#082459"
+    android:gravity="center"
+    android:padding="36dp">
+
+    <!-- Tabs -->
+    <include
+        android:id="@+id/notasBook"
+        layout="@layout/book_tab_activity" />
+
+    <include
+        android:id="@+id/notasTab"
+        android:visibility="gone"
+        layout="@layout/notas_tab_activity" />
+
+
+    <FrameLayout
+        android:id="@+id/modalOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:focusable="true"
+        android:visibility="gone"
+        android:clickable="true"
+        android:elevation="100dp">
+
+        <LinearLayout
+            android:id="@+id/modalView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_modal_bg"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:elevation="8dp"
+            android:layout_gravity="bottom">
+
+            <TextView
+                android:text="Procurar livros"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:layout_gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/buttonBrowse"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_button_bg"
+                android:text="Procurar pastas no dispositivo..."
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:layout_marginTop="24dp"
+                android:paddingHorizontal="24dp"
+                android:paddingVertical="10dp"
+                android:layout_gravity="center" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/editModalOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/editModalContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_gravity="bottom"
+            android:background="@drawable/rounded_modal_bg"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Editar Detalhes"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:layout_gravity="center"
+                android:textColor="@android:color/white"
+                android:layout_marginBottom="16dp" />
+
+            <ImageView
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_menu_gallery"
+                app:tint="@android:color/white" />
+
+            <EditText
+                android:id="@+id/editTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Título"
+                android:textColorHint="#B0C4DE"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#FFFFFF"
+                android:inputType="textCapWords"
+                android:layout_marginBottom="16dp" />
+
+            <EditText
+                android:id="@+id/editAuthor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Autor"
+                android:textColorHint="#B0C4DE"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#FFFFFF"
+                android:inputType="textCapWords"
+                android:layout_marginBottom="24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:weightSum="2">
+
+                <Button
+                    android:id="@+id/deleteButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Remover Livro"
+                    android:backgroundTint="#C65353"
+                    android:textColor="@android:color/white" />
+
+                <Space
+                    android:layout_width="16dp"
+                    android:layout_height="wrap_content" />
+
+                <Button
+                    android:id="@+id/saveButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Salvar"
+                    android:backgroundTint="#1E63F3"
+                    android:textColor="@android:color/white" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </FrameLayout>
+
+    <include
+        android:id="@+id/annotationModal"
+        layout="@layout/annotation_modal_activity"
+        android:visibility="gone" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

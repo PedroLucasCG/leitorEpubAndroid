@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/reader"
+    android:background="#103379">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="36dp"
+        android:paddingTop="36dp">
+
+        <TextView
+            android:id="@+id/chapterTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Capítulo 1"
+            android:textColor="#FFFFFF"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:fontFamily="@font/kadwa"
+            android:layout_gravity="right"
+            android:layout_marginTop="16dp" />
+        <View
+            android:layout_width="100dp"
+            android:layout_height="10dp"
+            android:layout_marginTop="4dp"
+            android:layout_gravity="end"
+            android:background="@drawable/rounded_underline" />
+
+        <!-- Row with Drop Cap and Main Paragraph -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="LOREM ipsum dolor sit amet, consectetur adipiscing elit. Mauris placerat nisl sit amet velit facilisis volutpat. Proin eu ipsum id metus rhoncus scelerisque. Donec pulvinar justo sit amet neque venenatis, quis congue lectus iaculis. Maecenas vestibulum, arcu nec sagittis varius, orci erat feugiat tellus, id efficitur auris cursus ac."
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:fontFamily="@font/kadwa" />
+
+            <TextView
+                android:layout_marginTop="24dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="LOREM ipsum dolor sit amet, consectetur adipiscing elit. Mauris placerat nisl sit amet velit facilisis volutpat. Proin eu ipsum id metus rhoncus scelerisque. Donec pulvinar justo sit amet neque venenatis, quis congue lectus iaculis. Maecenas vestibulum, arcu nec sagittis varius, orci erat feugiat tellus, id efficitur auris cursus ac."
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:fontFamily="@font/kadwa" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/highlightedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp"
+            android:text="Mauris placerat nisl sit amet velit facilisis volutpat. Proin eu ipsum id metus rhoncus scelerisque. Donec pulvinar justo sit amet neque venenatis, quis congue lectus"
+            android:background="@drawable/highlight_box"
+            android:padding="12dp"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:fontFamily="@font/kadwa" />
+    </LinearLayout>
+</ScrollView>

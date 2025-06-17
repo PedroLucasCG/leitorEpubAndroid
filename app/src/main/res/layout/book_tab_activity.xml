@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Livros"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="24sp"
+            android:paddingEnd="16dp" />
+
+        <TextView
+            android:id="@+id/tabNotas"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Notas"
+            android:textColor="#44536A"
+            android:textSize="24sp"
+            android:fontFamily="@font/kadwa"
+            android:paddingEnd="16dp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginLeft="16dp"
+        android:background="@drawable/tab_underline"
+        app:layout_constraintTop_toBottomOf="@id/tabLayout"
+        app:layout_constraintStart_toStartOf="@id/tabLayout" />
+
+    <LinearLayout
+        android:id="@+id/sortOptions"
+        android:layout_width="1000dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="32dp"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/tabLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <Spinner
+            android:id="@+id/sortAZ"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:entries="@array/sort_options"
+            android:background="@drawable/spinner_button_with_arrow"
+            android:popupBackground="#123BBA"
+            android:backgroundTint="#123BBA"
+            android:textColor="#FFFFFF"
+            android:paddingStart="12dp"
+            android:paddingEnd="36dp"
+            android:layout_marginEnd="8dp" />
+
+        <Spinner
+            android:id="@+id/sortRecente"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:entries="@array/date_options"
+            android:popupBackground="#123BBA"
+            android:background="@drawable/spinner_button_with_arrow"
+            android:backgroundTint="#123BBA"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="8dp" />
+
+        <Spinner
+            android:id="@+id/sortCategoria"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:background="@drawable/spinner_button_with_arrow"
+            android:entries="@array/category_options"
+            android:popupBackground="#123BBA"
+            android:paddingStart="12dp"
+            android:paddingEnd="36dp"
+            android:backgroundTint="#123BBA"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/sortOptions"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <GridLayout
+            android:id="@+id/bookGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="2"
+            android:orientation="horizontal"
+            android:paddingBottom="100dp">
+
+            <LinearLayout
+                android:id="@+id/book1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="8dp"
+                android:orientation="vertical"
+                android:background="#103379"
+                android:padding="8dp"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="140dp"
+                    android:layout_height="210dp"
+                    android:src="@drawable/book_cover"
+                    android:scaleType="fitXY" />
+
+                <TextView
+                    android:text="Livro 1 - The Eye o The World"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/kadwa"
+                    android:paddingTop="8dp"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"/>
+
+                <TextView
+                    android:text="Robert Jordan"
+                    android:textColor="#CCCCCC"
+                    android:textSize="12sp"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:fontFamily="@font/kadwa" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_margin="8dp"
+                android:orientation="vertical"
+                android:background="#103379"
+                android:padding="8dp"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="140dp"
+                    android:layout_height="210dp"
+                    android:src="@drawable/book_cover"
+                    android:scaleType="fitXY" />
+
+                <TextView
+                    android:text="Livro 1 - The Eye o The World"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/kadwa"
+                    android:paddingTop="8dp"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"/>
+
+                <TextView
+                    android:text="Robert Jordan"
+                    android:textColor="#CCCCCC"
+                    android:textSize="12sp"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:fontFamily="@font/kadwa" />
+            </LinearLayout>
+
+
+        </GridLayout>
+    </ScrollView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="#2C6CFF"
+        app:tint="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp" />
+</androidx.constraintlayout.widget.ConstraintLayout>
