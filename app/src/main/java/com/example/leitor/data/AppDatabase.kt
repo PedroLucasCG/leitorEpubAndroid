@@ -1,0 +1,43 @@
+package com.example.leitor.data
+
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import com.example.leitor.data.annotation.AnnotationDAO
+import com.example.leitor.data.annotation.BookAnnotationEntity
+import com.example.leitor.data.book.BookDAO
+import com.example.leitor.data.book.BookEntity
+import com.example.leitor.data.category.CategoryDAO
+import com.example.leitor.data.category.CategoryEntity
+import com.example.leitor.data.crossRef.BookCategoryCrossRef
+
+@Database(
+    entities = [
+        BookEntity::class,
+        CategoryEntity::class,
+        BookCategoryCrossRef::class,
+        BookAnnotationEntity::class],
+    version = 1
+)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun bookDao(): BookDAO
+    abstract fun categoryDao(): CategoryDAO
+    abstract fun annotationDAO(): AnnotationDAO
+
+    companion object {
+        @Volatile private var INSTANCE: AppDatabase? = null
+
+        fun getInstance(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "app_database"
+                )
+                    .fallbackToDestructiveMigration()
+                    .build().also { INSTANCE = it }
+            }
+        }
+    }
+}
