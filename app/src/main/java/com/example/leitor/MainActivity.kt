@@ -15,11 +15,14 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.leitor.data.AppDatabase
 import com.example.leitor.data.book.BookDAO
 import com.example.leitor.data.book.BookEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nl.siegmann.epublib.epub.EpubReader
 import java.io.File
 import java.io.InputStream
@@ -39,7 +42,7 @@ class MainActivity : AppCompatActivity() {
         setupTabs()
         setupModalButtons()
         setupAnnotationModal()
-        //loadEpubFromAssets("example.epub")
+        loadBooks()
         loadBookTabSpinners()
     }
 
@@ -122,6 +125,22 @@ class MainActivity : AppCompatActivity() {
     private fun dbInit() {
         val db = AppDatabase.getInstance(applicationContext)
         bookDao = db.bookDao()
+    }
+
+    private fun loadBooks() {
+        lifecycleScope.launch {
+            val books = withContext(Dispatchers.IO) {
+                AppDatabase.getInstance(applicationContext).bookDao().getAll()
+            }
+
+            val recycler = findViewById<RecyclerView>(R.id.bookRecycler)
+            recycler.layoutManager = GridLayoutManager(this@MainActivity, 2)
+            recycler.adapter = BookAdapter(books) { book ->
+                val intent = Intent(this@MainActivity, ReaderActivity::class.java)
+                intent.putExtra("bookUri", book.bookUri)
+                startActivity(intent)
+            }
+        }
     }
 
     // ========== EPUB LOADER ==========

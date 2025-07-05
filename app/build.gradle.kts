@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation(project(":epublib-core"))
+    implementation("org.jsoup:jsoup:1.16.1")
 
     // Room
     implementation("androidx.room:room-runtime:2.5.1")
