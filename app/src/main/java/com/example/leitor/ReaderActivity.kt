@@ -13,11 +13,18 @@ import android.os.Bundle
 import android.text.Layout
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.TextPaint
+import android.text.method.LinkMovementMethod
 import android.text.style.BackgroundColorSpan
+import android.text.style.ClickableSpan
 import android.view.ActionMode
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
 import android.widget.Button
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -41,6 +48,10 @@ import nl.siegmann.epublib.domain.Resource
 import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
 import org.jsoup.Jsoup
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class ReaderActivity : AppCompatActivity() {
 
@@ -164,19 +175,35 @@ class ReaderActivity : AppCompatActivity() {
                                     for (highlight in paragraphHighlights) {
                                         val start = highlight.startSelection.coerceIn(0, text.length)
                                         val end = highlight.endSelection.coerceIn(start, text.length)
+
+                                        val highlightSpan = object : ClickableSpan() {
+                                            override fun onClick(widget: View) {
+                                                showAnnotationModal(highlight)
+                                            }
+
+                                            override fun updateDrawState(ds: TextPaint) {
+                                                super.updateDrawState(ds)
+                                                ds.bgColor = Color.argb(60, 255, 233, 0)
+                                                ds.color = Color.WHITE
+                                                ds.isUnderlineText = false
+                                            }
+                                        }
+
                                         spannable.setSpan(
-                                            BackgroundColorSpan(Color.parseColor("#1466ff")),
+                                            highlightSpan,
                                             start,
                                             end,
                                             Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                                         )
                                     }
                                     textView.text = spannable
+                                    textView.movementMethod = LinkMovementMethod.getInstance()
                                 }
 
                                 chapterContent.addView(textView)
                                 paragraphIndex++
                             }
+
                         }
                     }
                 }
@@ -259,6 +286,14 @@ class ReaderActivity : AppCompatActivity() {
         index: Int,
         paragraphIndex: Int): TextView {
 
+        val annotationModal = findViewById<FrameLayout>(R.id.annotationModal)
+        val modalText = annotationModal.findViewById<TextView>(R.id.modalText)
+        val modalDate = annotationModal.findViewById<TextView>(R.id.modalDate)
+        val modalClose = annotationModal.findViewById<TextView>(R.id.modalClose)
+        val buttonSalvar = annotationModal.findViewById<Button>(R.id.buttonSalvar)
+        val buttonCancelar = annotationModal.findViewById<Button>(R.id.buttonCancelar)
+        val buttonExcluir = annotationModal.findViewById<Button>(R.id.buttonExcluir)
+
         return TextView(context).apply {
             this.text = text.trim()
             setTextColor(Color.WHITE)
@@ -313,46 +348,140 @@ class ReaderActivity : AppCompatActivity() {
 
                 @RequiresApi(Build.VERSION_CODES.O)
                 override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
-                    when (item.itemId) {
-                        R.id.menu_annotate -> {
-                            val start = selectionStart
-                            val end = selectionEnd
+                    if (item.itemId == R.id.menu_annotate) {
+                        val start = selectionStart
+                        val end = selectionEnd
+                        val selectedText = text.substring(start, end)
 
-                            lifecycleScope.launch (Dispatchers.IO) {
-                                annotationDao.insert(BookAnnotationEntity(
-                                    content = "String",
+                        modalText.setText(selectedText) // Ensure modalText is EditText
+                        modalDate.text = LocalDate.now().format(
+                            DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy", Locale("pt", "BR"))
+                        )
+                        annotationModal.visibility = View.VISIBLE
+
+                        val closeModal = {
+                            annotationModal.visibility = View.GONE
+                        }
+
+                        modalClose.setOnClickListener { closeModal() }
+                        buttonCancelar.setOnClickListener { closeModal() }
+
+                        buttonSalvar.setOnClickListener {
+                            val updatedContent = modalText.text.toString()
+
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                val annotation = BookAnnotationEntity(
+                                    content = updatedContent,
                                     chapter = index,
                                     paragraph = paragraphIndex,
                                     startSelection = start,
                                     endSelection = end,
-                                    bookId = bookId
-                                ))
-                                val annotations = annotationDao.getAll() // must be suspend function
+                                    bookId = bookId,
+                                    createdAt = LocalDateTime.now()
+                                )
+                                annotationDao.insert(annotation)
 
-                                annotations?.forEach {
-                                    println("🔸 Annotation:")
-                                    println("• Book ID: ${it.bookId}")
-                                    println("• Chapter: ${it.chapter}")
-                                    println("• Paragraph: ${it.paragraph}")
-                                    println("• Range: ${it.startSelection}-${it.endSelection}")
-                                    println("• Content: ${it.content}")
-                                    println("• Created at: ${it.createdAt}")
-                                    println("──────────────")
+                                val allParagraphHighlights = annotationDao
+                                    .getHighlightsForChapter(bookId, index)
+                                    .filter { it.paragraph == paragraphIndex }
+
+                                withContext(Dispatchers.Main) {
+                                    val spannable = SpannableString(text)
+
+                                    for (highlight in allParagraphHighlights) {
+                                        val hlStart = highlight.startSelection.coerceIn(0, text.length)
+                                        val hlEnd = highlight.endSelection.coerceIn(hlStart, text.length)
+
+                                        val highlightSpan = object : ClickableSpan() {
+                                            override fun onClick(widget: View) {
+                                                showAnnotationModal(highlight)
+                                            }
+
+                                            override fun updateDrawState(ds: TextPaint) {
+                                                super.updateDrawState(ds)
+                                                ds.bgColor = Color.argb(60, 255, 233, 0)
+                                                ds.color = Color.WHITE
+                                                ds.isUnderlineText = false
+                                            }
+                                        }
+
+                                        spannable.setSpan(
+                                            highlightSpan,
+                                            hlStart,
+                                            hlEnd,
+                                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                                        )
+                                    }
+
+                                    this@apply.text = spannable
+                                    this@apply.movementMethod = LinkMovementMethod.getInstance()
+                                    annotationModal.visibility = View.GONE
                                 }
                             }
-
-                            mode.finish()
-                            return true
                         }
-                        else -> return false
+
+                        // Optional delete button logic
+                        buttonExcluir.setOnClickListener {
+                            Toast.makeText(context, "Delete is disabled for new annotations", Toast.LENGTH_SHORT).show()
+                        }
+
+                        mode.finish()
+                        return true
                     }
+                    return false
                 }
+
+
 
                 override fun onDestroyActionMode(mode: android.view.ActionMode?) {}
             }
 
         }
     }
+
+    private fun showAnnotationModal(highlight: BookAnnotationEntity) {
+        runOnUiThread {
+            val modal = findViewById<FrameLayout>(R.id.annotationModal)
+            val date = findViewById<TextView>(R.id.modalDate)
+            val editText = findViewById<EditText>(R.id.modalText)
+
+            date.text = highlight.createdAt.toString() // Format if needed
+            editText.setText(highlight.content)
+
+            modal.visibility = View.VISIBLE
+
+            findViewById<TextView>(R.id.modalClose).setOnClickListener {
+                modal.visibility = View.GONE
+            }
+
+            findViewById<Button>(R.id.buttonCancelar).setOnClickListener {
+                modal.visibility = View.GONE
+            }
+
+            findViewById<Button>(R.id.buttonExcluir).setOnClickListener {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    annotationDao.delete(highlight)
+                    withContext(Dispatchers.Main) {
+                        modal.visibility = View.GONE
+                        displayChapter(highlight.chapter) // Refresh display
+                    }
+                }
+            }
+
+            findViewById<Button>(R.id.buttonSalvar).setOnClickListener {
+                val updatedText = editText.text.toString()
+                val updatedHighlight = highlight.copy(content = updatedText)
+                lifecycleScope.launch(Dispatchers.IO) {
+                    annotationDao.update(updatedHighlight)
+                    withContext(Dispatchers.Main) {
+                        modal.visibility = View.GONE
+                        displayChapter(highlight.chapter)
+                    }
+                }
+            }
+        }
+    }
+
 
     override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()

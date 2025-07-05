@@ -66,4 +66,8 @@
                 android:text="Next" />
         </LinearLayout>
     </LinearLayout>
+    <include
+        layout="@layout/annotation_modal"
+        android:id="@+id/annotationModal"
+        android:visibility="gone"/>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

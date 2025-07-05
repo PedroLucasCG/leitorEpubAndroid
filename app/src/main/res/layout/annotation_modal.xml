@@ -1,9 +1,11 @@
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/annotationModal"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#80000000"
+    android:visibility="gone"
     android:clickable="true"
     android:focusable="true">
 
@@ -15,8 +17,9 @@
         android:layout_margin="24dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="8dp"
+        app:cardBackgroundColor="#123BBA"
         android:clickable="true"
-        android:backgroundTint="#123BBA">
+        android:focusable="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -24,6 +27,7 @@
             android:orientation="vertical"
             android:padding="20dp">
 
+            <!-- Date and Close Button -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -39,7 +43,7 @@
                     android:text="25 de maio de 2025"
                     android:textColor="#FFFFFF"
                     android:textSize="14sp"
-                    android:fontFamily="@font/kadwa" />
+                    android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:id="@+id/modalClose"
@@ -47,63 +51,76 @@
                     android:layout_height="wrap_content"
                     android:text="✕"
                     android:textColor="#FFFFFF"
-                    android:textSize="16sp"
-                    android:padding="4dp" />
+                    android:textSize="18sp"
+                    android:padding="8dp" />
             </LinearLayout>
 
-            <TextView
+            <EditText
                 android:id="@+id/modalText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="adipiscing elit. Mauris placerat nisl sit amet velit facilisis volutpat. Proin eu ipsum id metus rhoncus scelerisque. Donec pulvinar justo sit amet neque venenatis, quis congue lectus"
+                android:hint="Digite sua anotação..."
                 android:textColor="#FFFFFF"
+                android:textColorHint="#CCCCCC"
                 android:textSize="16sp"
                 android:lineSpacingExtra="4dp"
                 android:fontFamily="@font/kadwa"
-                android:layout_marginBottom="24dp" />
+                android:layout_marginBottom="24dp"
+                android:background="@android:color/transparent"
+                android:inputType="textMultiLine"
+                android:minLines="3"
+                android:gravity="top|start"
+                android:padding="8dp" />
 
+            <!-- Action Buttons -->
+            <!-- Action Buttons (using standard Button) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center"
-                android:weightSum="3">
+                android:layout_marginTop="8dp"
+                android:weightSum="3"
+                android:divider="?android:attr/dividerVertical"
+                android:showDividers="middle">
 
-                <com.google.android.material.button.MaterialButton
+                <Button
                     android:id="@+id/buttonExcluir"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="excluir"
+                    android:text="Excluir"
                     android:textAllCaps="false"
-                    android:textColor="#FFFFFF"
-                    android:layout_marginEnd="6dp"
-                    app:cornerRadius="12dp"
-                    app:backgroundTint="#E56B6F" />
+                    android:textColor="@android:color/white"
+                    android:background="#E53935"
+                    android:layout_marginStart="6dp"
+                    android:padding="10dp" />
 
-                <com.google.android.material.button.MaterialButton
+                <Button
                     android:id="@+id/buttonCancelar"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:text="cancelar"
+                    android:text="Cancelar"
                     android:textAllCaps="false"
-                    android:textColor="#FFFFFF"
-                    app:cornerRadius="10dp"
-                    app:backgroundTint="#1E90FF" />
+                    android:textColor="@android:color/white"
+                    android:background="#757575"
+                    android:layout_marginStart="6dp"
+                    android:padding="10dp" />
 
-                <com.google.android.material.button.MaterialButton
+                <Button
                     android:id="@+id/buttonSalvar"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="salvar"
+                    android:text="Salvar"
                     android:textAllCaps="false"
-                    android:textColor="#FFFFFF"
-                    app:cornerRadius="10dp"
-                    app:backgroundTint="#2C6CFF" />
+                    android:textColor="@android:color/white"
+                    android:background="#2C6CFF"
+                    android:layout_marginStart="6dp"
+                    android:padding="10dp" />
             </LinearLayout>
+
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 </FrameLayout>

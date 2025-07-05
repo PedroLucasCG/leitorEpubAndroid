@@ -157,7 +157,7 @@
 
     <include
         android:id="@+id/annotationModal"
-        layout="@layout/annotation_modal_activity"
+        layout="@layout/annotation_modal"
         android:visibility="gone" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

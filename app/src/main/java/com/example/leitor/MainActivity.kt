@@ -1,15 +1,18 @@
 package com.example.leitor
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -32,6 +35,7 @@ import nl.siegmann.epublib.epub.EpubReader
 import java.io.File
 import java.io.InputStream
 import androidx.core.net.toUri
+import com.example.leitor.data.annotation.AnnotationDAO
 import nl.siegmann.epublib.domain.Book
 
 class MainActivity : AppCompatActivity() {
@@ -40,6 +44,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bookAdapter: BookAdapter
     private var selectedImageUri: Uri? = null
     private lateinit var bookDao: BookDAO
+    private lateinit var annotationDao: AnnotationDAO
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,7 +59,42 @@ class MainActivity : AppCompatActivity() {
         setupModalButtons()
         setupAnnotationModal()
         loadBooks()
+        loadAnnotations()
         loadBookTabSpinners()
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun loadAnnotations() {
+        val noteListLayout = findViewById<LinearLayout>(R.id.noteList)
+
+        lifecycleScope.launch {
+            val annotations = withContext(Dispatchers.IO) {
+                annotationDao.getAll()
+            }
+
+            noteListLayout.removeAllViews()
+
+            if (annotations != null) {
+                for (annotation in annotations) {
+                    val view = LayoutInflater.from(this@MainActivity)
+                        .inflate(R.layout.annotation_card, noteListLayout, false)
+
+                    val bookTitleText = view.findViewById<TextView>(R.id.annotationTitle)
+                    val contentText = view.findViewById<TextView>(R.id.annotationText)
+                    val meta = view.findViewById<TextView>(R.id.annotationMeta)
+
+                    lifecycleScope.launch (Dispatchers.IO){
+                        val book = bookDao.getById(annotation.bookId)
+                        bookTitleText.text = "${book?.bookTitle}"
+                        contentText.text = annotation.content
+                        meta.text = "seção ${annotation.chapter + 1}"
+
+                        noteListLayout.addView(view)
+                    }
+
+                }
+            }
+        }
     }
 
     // ========== UI CONFIGURATION ==========
@@ -169,6 +210,7 @@ class MainActivity : AppCompatActivity() {
     private fun dbInit() {
         val db = AppDatabase.getInstance(applicationContext)
         bookDao = db.bookDao()
+        annotationDao = db.annotationDao()
     }
 
     private fun refresh() {
