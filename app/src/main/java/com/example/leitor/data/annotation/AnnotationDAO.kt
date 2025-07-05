@@ -23,4 +23,10 @@ interface AnnotationDAO {
 
     @Query("SELECT * FROM BookAnnotation WHERE id = :id")
     fun getById(id: Int): BookAnnotationEntity?
+
+    @Query("SELECT * FROM BookAnnotation WHERE bookId = :bookId AND chapter = :chapter")
+    fun getHighlightsForChapter(bookId: Int, chapter: Int): List<BookAnnotationEntity>
+
+    @Query("SELECT * FROM BookAnnotation")
+    fun getAll(): MutableList<BookAnnotationEntity>?
 }

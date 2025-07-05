@@ -186,7 +186,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadBooks() {
         lifecycleScope.launch {
             val books = withContext(Dispatchers.IO) {
-                AppDatabase.getInstance(applicationContext).bookDao().getAll()
+                bookDao.getAll()
             }.toMutableList()
 
             val recycler = findViewById<RecyclerView>(R.id.bookRecycler)
@@ -249,6 +249,7 @@ class MainActivity : AppCompatActivity() {
     private fun openBook(book: BookEntity) {
         val intent = Intent(this, ReaderActivity::class.java).apply {
             putExtra("bookUri", book.bookUri)
+            putExtra("bookId", book.id)
         }
         startActivity(intent)
     }
@@ -306,6 +307,7 @@ class MainActivity : AppCompatActivity() {
                 bookDao.insert(bookEntity)
             }
 
+            refresh()
         } catch (e: Exception) {
             e.printStackTrace()
         }

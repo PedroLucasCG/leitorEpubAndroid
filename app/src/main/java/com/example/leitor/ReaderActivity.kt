@@ -11,7 +11,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.Layout
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.BackgroundColorSpan
+import android.view.ActionMode
 import android.view.Gravity
+import android.view.MenuItem
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -23,6 +28,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.net.toUri
 import androidx.core.text.HtmlCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import com.example.leitor.data.AppDatabase
+import com.example.leitor.data.annotation.AnnotationDAO
+import com.example.leitor.data.annotation.BookAnnotationEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nl.siegmann.epublib.domain.Book
 import nl.siegmann.epublib.domain.Resource
 import nl.siegmann.epublib.domain.TOCReference
@@ -34,6 +47,7 @@ class ReaderActivity : AppCompatActivity() {
     private lateinit var chapterContent: LinearLayout
     private lateinit var imageResources: List<Resource>
     private lateinit var book: Book
+    private lateinit var annotationDao: AnnotationDAO
     private lateinit var prevButton: Button
     private lateinit var nextButton: Button
 
@@ -41,6 +55,7 @@ class ReaderActivity : AppCompatActivity() {
     private lateinit var sections: List<Resource>
     private lateinit var bookTitle: String
     private lateinit var bookUri: Uri
+    private var bookId: Int = -1
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,8 +69,13 @@ class ReaderActivity : AppCompatActivity() {
         prevButton = findViewById(R.id.prevButton)
         nextButton = findViewById(R.id.nextButton)
 
+        val db = AppDatabase.getInstance(applicationContext)
+        annotationDao = db.annotationDao()
+
         val uriString = intent.getStringExtra("bookUri")
         bookUri = Uri.parse(uriString)
+
+        bookId = intent.getIntExtra("bookId", -1)
 
         try {
             contentResolver.takePersistableUriPermission(bookUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -101,36 +121,72 @@ class ReaderActivity : AppCompatActivity() {
         val rawHtml = String(currentSection.data)
         val document = Jsoup.parse(rawHtml)
 
-        // Detect if current section is the TOC
         val isToc = currentSection.href.contains("toc", ignoreCase = true)
 
         if (isToc) {
             renderTocInline()
-        } else {
-            val elements = document.body().select("p, h1, img")
+            return
+        }
 
-            for (element in elements) {
-                when (element.tagName()) {
-                    "img" -> {
-                        val src = element.attr("src")
-                        val imageView = createImageView(this, src, imageResources)
-                        chapterContent.addView(imageView)
-                    }
-                    else -> {
-                        val text = element.text().trim()
-                        val className = element.classNames().firstOrNull()
-                        if (text.isNotBlank()) {
-                            val paragraphView = createStyledTextView(this, text, className, element.tagName())
-                            chapterContent.addView(paragraphView)
+        val elements = document.body().select("p, h1, img")
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val highlights = annotationDao.getHighlightsForChapter(bookId, index)
+
+            withContext(Dispatchers.Main) {
+                var paragraphIndex = 0
+
+                for (element in elements) {
+                    when (element.tagName()) {
+                        "img" -> {
+                            val src = element.attr("src")
+                            val imageView = createImageView(this@ReaderActivity, src, imageResources)
+                            chapterContent.addView(imageView)
+                        }
+                        else -> {
+                            val text = element.text().trim()
+                            if (text.isNotBlank()) {
+                                val className = element.classNames().firstOrNull()
+                                val tagName = element.tagName()
+                                val paragraphHighlights = highlights.filter { it.paragraph == paragraphIndex }
+
+                                val textView = createStyledTextView(
+                                    context = this@ReaderActivity,
+                                    text = text,
+                                    className = className,
+                                    tagName = tagName,
+                                    index = index,
+                                    paragraphIndex = paragraphIndex
+                                )
+
+                                if (paragraphHighlights.isNotEmpty()) {
+                                    val spannable = SpannableString(text)
+                                    for (highlight in paragraphHighlights) {
+                                        val start = highlight.startSelection.coerceIn(0, text.length)
+                                        val end = highlight.endSelection.coerceIn(start, text.length)
+                                        spannable.setSpan(
+                                            BackgroundColorSpan(Color.parseColor("#1466ff")),
+                                            start,
+                                            end,
+                                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                                        )
+                                    }
+                                    textView.text = spannable
+                                }
+
+                                chapterContent.addView(textView)
+                                paragraphIndex++
+                            }
                         }
                     }
                 }
+
+                prevButton.isEnabled = index > 0
+                nextButton.isEnabled = index < sections.size - 1
             }
         }
-
-        prevButton.isEnabled = index > 0
-        nextButton.isEnabled = index < sections.size - 1
     }
+
 
     private fun renderTocInline() {
         val toc = book.tableOfContents.tocReferences
@@ -195,11 +251,19 @@ class ReaderActivity : AppCompatActivity() {
         return imageView
     }
 
-    private fun createStyledTextView(context: Context, text: String, className: String?, tagName: String? = null): TextView {
+    private fun createStyledTextView(
+        context: Context,
+        text: String,
+        className: String?,
+        tagName: String? = null,
+        index: Int,
+        paragraphIndex: Int): TextView {
+
         return TextView(context).apply {
             this.text = text.trim()
             setTextColor(Color.WHITE)
             typeface = ResourcesCompat.getFont(context, R.font.kadwa)
+            this.setTextIsSelectable(true)
 
             val isHeader = tagName == "h1" || className in listOf("calibre2", "calibre5")
             val isSubHeader = className == "calibre7"
@@ -236,11 +300,59 @@ class ReaderActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 justificationMode = LineBreaker.JUSTIFICATION_MODE_INTER_WORD
             }
+
+            customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
+                override fun onCreateActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+                    menu?.add(0, R.id.menu_annotate, 0, "Anotar")
+                    return true
+                }
+
+                override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+                    return false
+                }
+
+                @RequiresApi(Build.VERSION_CODES.O)
+                override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
+                    when (item.itemId) {
+                        R.id.menu_annotate -> {
+                            val start = selectionStart
+                            val end = selectionEnd
+
+                            lifecycleScope.launch (Dispatchers.IO) {
+                                annotationDao.insert(BookAnnotationEntity(
+                                    content = "String",
+                                    chapter = index,
+                                    paragraph = paragraphIndex,
+                                    startSelection = start,
+                                    endSelection = end,
+                                    bookId = bookId
+                                ))
+                                val annotations = annotationDao.getAll() // must be suspend function
+
+                                annotations?.forEach {
+                                    println("🔸 Annotation:")
+                                    println("• Book ID: ${it.bookId}")
+                                    println("• Chapter: ${it.chapter}")
+                                    println("• Paragraph: ${it.paragraph}")
+                                    println("• Range: ${it.startSelection}-${it.endSelection}")
+                                    println("• Content: ${it.content}")
+                                    println("• Created at: ${it.createdAt}")
+                                    println("──────────────")
+                                }
+                            }
+
+                            mode.finish()
+                            return true
+                        }
+                        else -> return false
+                    }
+                }
+
+                override fun onDestroyActionMode(mode: android.view.ActionMode?) {}
+            }
+
         }
     }
-
-
-
 
     override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()

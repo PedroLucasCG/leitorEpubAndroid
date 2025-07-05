@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import com.example.leitor.data.annotation.AnnotationDAO
 import com.example.leitor.data.annotation.BookAnnotationEntity
+import com.example.leitor.data.annotation.DateTimeConverters
 import com.example.leitor.data.book.BookDAO
 import com.example.leitor.data.book.BookEntity
 import com.example.leitor.data.category.CategoryDAO
@@ -18,12 +20,13 @@ import com.example.leitor.data.crossRef.BookCategoryCrossRef
         CategoryEntity::class,
         BookCategoryCrossRef::class,
         BookAnnotationEntity::class],
-    version = 1
+    version = 3
 )
+@TypeConverters(DateTimeConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun bookDao(): BookDAO
     abstract fun categoryDao(): CategoryDAO
-    abstract fun annotationDAO(): AnnotationDAO
+    abstract fun annotationDao(): AnnotationDAO
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
