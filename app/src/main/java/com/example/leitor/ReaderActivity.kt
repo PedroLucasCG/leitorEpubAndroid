@@ -23,7 +23,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.net.toUri
 import androidx.core.text.HtmlCompat
+import nl.siegmann.epublib.domain.Book
 import nl.siegmann.epublib.domain.Resource
+import nl.siegmann.epublib.domain.TOCReference
 import nl.siegmann.epublib.epub.EpubReader
 import org.jsoup.Jsoup
 
@@ -31,6 +33,7 @@ class ReaderActivity : AppCompatActivity() {
 
     private lateinit var chapterContent: LinearLayout
     private lateinit var imageResources: List<Resource>
+    private lateinit var book: Book
     private lateinit var prevButton: Button
     private lateinit var nextButton: Button
 
@@ -57,7 +60,7 @@ class ReaderActivity : AppCompatActivity() {
         try {
             contentResolver.takePersistableUriPermission(bookUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             val inputStream = contentResolver.openInputStream(bookUri)
-            val book = EpubReader().readEpub(inputStream)
+            book = EpubReader().readEpub(inputStream)
 
             sections = book.contents
             bookTitle = book.title ?: "Livro"
@@ -94,28 +97,72 @@ class ReaderActivity : AppCompatActivity() {
         chapterContent.removeAllViews()
         supportActionBar?.title = "$bookTitle – Capítulo ${index + 1}"
 
-        val rawHtml = String(sections[index].data)
+        val currentSection = sections[index]
+        val rawHtml = String(currentSection.data)
         val document = Jsoup.parse(rawHtml)
-        val elements = document.body().select("p, h1, img")
 
-        for (element in elements) {
-            if (element.tagName() == "img") {
-                val src = element.attr("src")
-                val imageView = createImageView(this, src, imageResources)
-                chapterContent.addView(imageView)
-                continue
-            }
+        // Detect if current section is the TOC
+        val isToc = currentSection.href.contains("toc", ignoreCase = true)
 
-            val text = element.text().trim()
-            if (text.isNotBlank()) {
-                val className = element.classNames().firstOrNull()
-                val paragraphView = createStyledTextView(this, text, className, element.tagName())
-                chapterContent.addView(paragraphView)
+        if (isToc) {
+            renderTocInline()
+        } else {
+            val elements = document.body().select("p, h1, img")
+
+            for (element in elements) {
+                when (element.tagName()) {
+                    "img" -> {
+                        val src = element.attr("src")
+                        val imageView = createImageView(this, src, imageResources)
+                        chapterContent.addView(imageView)
+                    }
+                    else -> {
+                        val text = element.text().trim()
+                        val className = element.classNames().firstOrNull()
+                        if (text.isNotBlank()) {
+                            val paragraphView = createStyledTextView(this, text, className, element.tagName())
+                            chapterContent.addView(paragraphView)
+                        }
+                    }
+                }
             }
         }
 
         prevButton.isEnabled = index > 0
         nextButton.isEnabled = index < sections.size - 1
+    }
+
+    private fun renderTocInline() {
+        val toc = book.tableOfContents.tocReferences
+
+        fun renderItems(items: List<TOCReference>, level: Int = 0) {
+            for (ref in items) {
+                val title = ref.title ?: "Untitled"
+                val resource = ref.resource
+
+                val textView = TextView(this).apply {
+                    text = "→ ".repeat(level) + title
+                    setTextColor(Color.CYAN)
+                    textSize = 20f
+                    setPadding(16 + level * 16, 8, 16, 8)
+                    setOnClickListener {
+                        val index = sections.indexOfFirst { it.href == resource.href }
+                        if (index >= 0) {
+                            currentChapterIndex = index
+                            displayChapter(index)
+                        }
+                    }
+                }
+
+                chapterContent.addView(textView)
+
+                if (ref.children.isNotEmpty()) {
+                    renderItems(ref.children, level + 1)
+                }
+            }
+        }
+
+        renderItems(toc)
     }
 
     private fun createImageView(context: Context, src: String, resources: List<Resource>): ImageView {
