@@ -156,8 +156,6 @@
     </FrameLayout>
 
     <include
-        android:id="@+id/annotationModal"
-        layout="@layout/annotation_modal"
-        android:visibility="gone" />
+        layout="@layout/annotation_modal_home_screen" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

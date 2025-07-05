@@ -83,41 +83,49 @@
                 android:divider="?android:attr/dividerVertical"
                 android:showDividers="middle">
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonExcluir"
+                    style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Excluir"
                     android:textAllCaps="false"
                     android:textColor="@android:color/white"
-                    android:background="#E53935"
+                    app:cornerRadius="8dp"
+                    app:backgroundTint="#E53935"
                     android:layout_marginStart="6dp"
                     android:padding="10dp" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonCancelar"
+                    style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Cancelar"
                     android:textAllCaps="false"
                     android:textColor="@android:color/white"
-                    android:background="#757575"
+                    app:cornerRadius="8dp"
+                    app:backgroundTint="#757575"
                     android:layout_marginStart="6dp"
                     android:padding="10dp" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonSalvar"
+                    style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Salvar"
                     android:textAllCaps="false"
                     android:textColor="@android:color/white"
-                    android:background="#2C6CFF"
+                    app:cornerRadius="8dp"
+                    app:backgroundTint="#2C6CFF"
                     android:layout_marginStart="6dp"
                     android:padding="10dp" />
+
+
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>

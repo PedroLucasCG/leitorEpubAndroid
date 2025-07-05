@@ -4,7 +4,9 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.ArrayAdapter
@@ -18,6 +20,7 @@ import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
@@ -36,7 +39,10 @@ import java.io.File
 import java.io.InputStream
 import androidx.core.net.toUri
 import com.example.leitor.data.annotation.AnnotationDAO
+import com.example.leitor.data.annotation.BookAnnotationEntity
 import nl.siegmann.epublib.domain.Book
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     private lateinit var epubPickerLauncher: ActivityResultLauncher<Intent>
@@ -61,40 +67,6 @@ class MainActivity : AppCompatActivity() {
         loadBooks()
         loadAnnotations()
         loadBookTabSpinners()
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun loadAnnotations() {
-        val noteListLayout = findViewById<LinearLayout>(R.id.noteList)
-
-        lifecycleScope.launch {
-            val annotations = withContext(Dispatchers.IO) {
-                annotationDao.getAll()
-            }
-
-            noteListLayout.removeAllViews()
-
-            if (annotations != null) {
-                for (annotation in annotations) {
-                    val view = LayoutInflater.from(this@MainActivity)
-                        .inflate(R.layout.annotation_card, noteListLayout, false)
-
-                    val bookTitleText = view.findViewById<TextView>(R.id.annotationTitle)
-                    val contentText = view.findViewById<TextView>(R.id.annotationText)
-                    val meta = view.findViewById<TextView>(R.id.annotationMeta)
-
-                    lifecycleScope.launch (Dispatchers.IO){
-                        val book = bookDao.getById(annotation.bookId)
-                        bookTitleText.text = "${book?.bookTitle}"
-                        contentText.text = annotation.content
-                        meta.text = "seção ${annotation.chapter + 1}"
-
-                        noteListLayout.addView(view)
-                    }
-
-                }
-            }
-        }
     }
 
     // ========== UI CONFIGURATION ==========
@@ -244,6 +216,91 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    @SuppressLint("SetTextI18n")
+    private fun loadAnnotations() {
+        val noteListLayout = findViewById<LinearLayout>(R.id.noteList)
+
+        lifecycleScope.launch {
+            val annotations = withContext(Dispatchers.IO) {
+                annotationDao.getAll()
+            }
+
+            noteListLayout.removeAllViews()
+
+            if (annotations != null) {
+                for (annotation in annotations) {
+                    val view = LayoutInflater.from(this@MainActivity)
+                        .inflate(R.layout.annotation_card, noteListLayout, false)
+
+                    val bookTitleText = view.findViewById<TextView>(R.id.annotationTitle)
+                    val contentText = view.findViewById<TextView>(R.id.annotationText)
+                    val meta = view.findViewById<TextView>(R.id.annotationMeta)
+
+                    lifecycleScope.launch (Dispatchers.IO){
+                        val book = bookDao.getById(annotation.bookId)
+                        bookTitleText.text = "${book?.bookTitle}"
+                        contentText.text = annotation.content
+                        meta.text = "seção ${annotation.chapter + 1}"
+
+                        view.setOnClickListener {
+                            openAnnotationModal(annotation)
+                        }
+                        noteListLayout.addView(view)
+                    }
+
+                }
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun openAnnotationModal(annotation: BookAnnotationEntity) {
+        val modalText = findViewById<EditText?>(R.id.modalText)
+        val modalDate = findViewById<TextView?>(R.id.modalDate)
+        val annotationModal = findViewById<View?>(R.id.annotationModal)
+        val buttonSalvar = findViewById<Button?>(R.id.buttonSalvar)
+        val buttonCancelar = findViewById<Button?>(R.id.buttonCancelar)
+        val buttonExcluir = findViewById<Button?>(R.id.buttonExcluir)
+
+        if (modalText == null || modalDate == null || annotationModal == null ||
+            buttonSalvar == null || buttonCancelar == null || buttonExcluir == null) {
+            Log.e("AnnotationModal", "Some views not found")
+            return
+        }
+
+        modalText.setText(annotation.content)
+        modalDate.text = annotation.createdAt.toLocalDate()
+            .format(DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy", Locale("pt", "BR")))
+        annotationModal.visibility = View.VISIBLE
+
+        buttonSalvar.setOnClickListener {
+            val updated = annotation.copy(content = modalText.text.toString())
+            lifecycleScope.launch(Dispatchers.IO) {
+                annotationDao.update(updated)
+                withContext(Dispatchers.Main) {
+                    annotationModal.visibility = View.GONE
+                    loadAnnotations()
+                }
+            }
+        }
+
+        buttonExcluir.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.IO) {
+                annotationDao.delete(annotation)
+                withContext(Dispatchers.Main) {
+                    annotationModal.visibility = View.GONE
+                    loadAnnotations()
+                }
+            }
+        }
+
+        buttonCancelar.setOnClickListener {
+            annotationModal.visibility = View.GONE
+        }
+    }
+
 
     private fun openEditModal(book: BookEntity){
         val modal = findViewById<FrameLayout>(R.id.editModalOverlay)
