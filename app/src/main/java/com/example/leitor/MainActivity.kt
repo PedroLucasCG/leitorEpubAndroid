@@ -1,10 +1,15 @@
 package com.example.leitor
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -26,9 +31,14 @@ import kotlinx.coroutines.withContext
 import nl.siegmann.epublib.epub.EpubReader
 import java.io.File
 import java.io.InputStream
+import androidx.core.net.toUri
+import nl.siegmann.epublib.domain.Book
 
 class MainActivity : AppCompatActivity() {
     private lateinit var epubPickerLauncher: ActivityResultLauncher<Intent>
+    private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
+    private lateinit var bookAdapter: BookAdapter
+    private var selectedImageUri: Uri? = null
     private lateinit var bookDao: BookDAO
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,6 +73,17 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.let { uri ->
+                    selectedImageUri = uri
+
+                    val imageView = findViewById<ImageView>(R.id.editCoverImage)
+                    imageView.setImageURI(uri)
+                }
+            }
+        }
     }
 
     private fun setupTabs() {
@@ -85,6 +106,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupModalButtons() {
+        // add book
         val fabAdd = findViewById<View>(R.id.fabAdd)
         val modalOverlay = findViewById<View>(R.id.modalOverlay)
         val modalView = findViewById<View>(R.id.modalView)
@@ -102,6 +124,28 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.buttonBrowse).setOnClickListener {
             openFilePicker()
         }
+
+        // edit book details
+        val editModal = findViewById<FrameLayout>(R.id.editModalOverlay)
+
+        val editModalContent = findViewById<View>(R.id.editModalContent)
+
+        editModal.setOnClickListener {
+            editModal.visibility = View.GONE
+        }
+
+        editModalContent.setOnClickListener {
+            // Do nothing
+        }
+
+        val imageView = findViewById<ImageView>(R.id.editCoverImage)
+        imageView.setOnClickListener {
+            val intent = Intent(Intent.ACTION_PICK).apply {
+                type = "image/*"
+            }
+            imagePickerLauncher.launch(intent)
+        }
+
     }
 
     private fun setupAnnotationModal() {
@@ -127,21 +171,88 @@ class MainActivity : AppCompatActivity() {
         bookDao = db.bookDao()
     }
 
+    private fun refresh() {
+        lifecycleScope.launch {
+            val books = withContext(Dispatchers.IO) {
+                bookDao.getAll()
+            }.toMutableList()
+
+            val recycler = findViewById<RecyclerView>(R.id.bookRecycler)
+            bookAdapter = recycler.adapter as BookAdapter
+            bookAdapter.updateBooks(books)
+        }
+    }
+
     private fun loadBooks() {
         lifecycleScope.launch {
             val books = withContext(Dispatchers.IO) {
                 AppDatabase.getInstance(applicationContext).bookDao().getAll()
-            }
+            }.toMutableList()
 
             val recycler = findViewById<RecyclerView>(R.id.bookRecycler)
-            recycler.layoutManager = GridLayoutManager(this@MainActivity, 2)
-            recycler.adapter = BookAdapter(books) { book ->
-                val intent = Intent(this@MainActivity, ReaderActivity::class.java)
-                intent.putExtra("bookUri", book.bookUri)
-                startActivity(intent)
+            recycler.layoutManager = GridLayoutManager(/* context = */ this@MainActivity, /* spanCount = */
+                2)
+            recycler.adapter = BookAdapter(
+                books = books,
+                onClick = { openBook(it) },
+                onLongClickEdit = { book ->
+                    openEditModal(book)
+                }
+            )
+        }
+
+    }
+
+    private fun openEditModal(book: BookEntity){
+        val modal = findViewById<FrameLayout>(R.id.editModalOverlay)
+        val recycler = findViewById<RecyclerView>(R.id.bookRecycler)
+        bookAdapter = recycler.adapter as BookAdapter
+        modal.visibility = View.VISIBLE
+
+        findViewById<EditText>(R.id.editTitle).setText(book.bookTitle)
+        findViewById<EditText>(R.id.editAuthor).setText(book.bookAuthor)
+
+
+        val coverImage = findViewById<ImageView>(R.id.editCoverImage)
+        if (book.imageUri != null && book.imageUri != "default") {
+            coverImage.setImageURI(book.imageUri.toUri())
+        } else {
+            coverImage.setImageResource(R.drawable.book_cover)
+        }
+
+        // Optional: setup Save button
+        findViewById<Button>(R.id.saveButton).setOnClickListener {
+            val newTitle = findViewById<EditText>(R.id.editTitle).text.toString()
+            val newAuthor = findViewById<EditText>(R.id.editAuthor).text.toString()
+
+            val updatedBook = book.copy(bookTitle = newTitle, bookAuthor = newAuthor)
+            lifecycleScope.launch (Dispatchers.IO){
+                bookDao.update(updatedBook)
+            }
+            bookAdapter.updateBook(updatedBook)
+            modal.visibility = View.GONE
+            refresh()
+        }
+
+        findViewById<Button>(R.id.deleteButton).setOnClickListener {
+            lifecycleScope.launch(Dispatchers.IO) {
+                bookDao.delete(book)
+
+                withContext(Dispatchers.Main) {
+                    modal.visibility = View.GONE
+                    refresh()
+                }
             }
         }
     }
+
+    private fun openBook(book: BookEntity) {
+        val intent = Intent(this, ReaderActivity::class.java).apply {
+            putExtra("bookUri", book.bookUri)
+        }
+        startActivity(intent)
+    }
+
 
     // ========== EPUB LOADER ==========
 
@@ -181,7 +292,7 @@ class MainActivity : AppCompatActivity() {
                 val file = File(cacheDir, filename)
                 file.outputStream().use { os -> os.write(it.data) }
                 file.toURI().toString()
-            }
+            } ?: "default"
 
             val bookEntity = BookEntity(
                 bookUri = bookUri,
