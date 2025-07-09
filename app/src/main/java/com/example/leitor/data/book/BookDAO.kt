@@ -20,7 +20,7 @@ interface BookDAO {
     @Delete
     fun delete(book: BookEntity)
 
-    @Query("SELECT * FROM Book ORDER BY bookTitle ASC")
+    @Query("SELECT * FROM Book")
     fun getAll(): List<BookEntity>
 
     @Query("SELECT * FROM Book WHERE id = :id")

@@ -48,7 +48,7 @@
 
     <LinearLayout
         android:id="@+id/sortOptions"
-        android:layout_width="1000dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginTop="32dp"
@@ -57,30 +57,23 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <Spinner
-            android:id="@+id/notasAZ"
-            android:layout_width="150dp"
+        <LinearLayout
+            android:id="@+id/annotationFilterLayout"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:entries="@array/sort_options"
-            android:background="@drawable/spinner_button_with_arrow"
-            android:popupBackground="#123BBA"
-            android:backgroundTint="#123BBA"
-            android:textColor="#FFFFFF"
-            android:paddingStart="12dp"
-            android:paddingEnd="36dp"
-            android:layout_marginEnd="8dp" />
+            android:orientation="horizontal"
+            android:gravity="center">
 
-        <Spinner
-            android:id="@+id/notasRecente"
-            android:layout_width="100dp"
-            android:layout_height="wrap_content"
-            android:entries="@array/date_options"
-            android:popupBackground="#123BBA"
-            android:background="@drawable/spinner_button_with_arrow"
-            android:backgroundTint="#123BBA"
-            android:textColor="#FFFFFF"
-            android:layout_marginEnd="8dp" />
-
+            <ToggleButton
+                android:id="@+id/annotationToggleDate"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:minWidth="120dp"
+                android:textOn="Date ▼"
+                android:textOff="Date ▲"
+                android:textColor="@android:color/white"
+                android:background="@drawable/toggle_button_selector"/>
+        </LinearLayout>
     </LinearLayout>
 
     <ScrollView

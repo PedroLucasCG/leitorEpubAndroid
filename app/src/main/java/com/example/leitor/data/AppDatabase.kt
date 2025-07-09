@@ -20,7 +20,7 @@ import com.example.leitor.data.crossRef.BookCategoryCrossRef
         CategoryEntity::class,
         BookCategoryCrossRef::class,
         BookAnnotationEntity::class],
-    version = 3
+    version = 6
 )
 @TypeConverters(DateTimeConverters::class)
 abstract class AppDatabase : RoomDatabase() {

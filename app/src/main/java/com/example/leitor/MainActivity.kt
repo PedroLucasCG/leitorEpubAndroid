@@ -2,6 +2,7 @@ package com.example.leitor
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -17,6 +18,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.ToggleButton
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,11 +38,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.siegmann.epublib.epub.EpubReader
 import java.io.File
-import java.io.InputStream
 import androidx.core.net.toUri
 import com.example.leitor.data.annotation.AnnotationDAO
 import com.example.leitor.data.annotation.BookAnnotationEntity
-import nl.siegmann.epublib.domain.Book
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var annotationDao: AnnotationDAO
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -65,8 +66,6 @@ class MainActivity : AppCompatActivity() {
         setupModalButtons()
         setupAnnotationModal()
         loadBooks()
-        loadAnnotations()
-        loadBookTabSpinners()
     }
 
     // ========== UI CONFIGURATION ==========
@@ -99,22 +98,35 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun setupTabs() {
         val tabLivros = findViewById<TextView>(R.id.tabLivros)
         val tabNotas = findViewById<TextView>(R.id.tabNotas)
         val notasTab = findViewById<View>(R.id.notasTab)
         val notasBook = findViewById<View>(R.id.notasBook)
 
+        val bookToggleTitle = findViewById<ToggleButton>(R.id.bookToggleTitle)
+        val bookToggleDate = findViewById<ToggleButton>(R.id.bookToggleDate)
+
+        bookToggleTitle.setOnClickListener {
+            bookToggleDate.isChecked = false
+            loadBooks()
+        }
+
+        bookToggleDate.setOnClickListener {
+            bookToggleTitle.isChecked = false
+            loadBooks()
+        }
+
         tabLivros.setOnClickListener {
             notasBook.visibility = View.VISIBLE
             notasTab.visibility = View.GONE
-            loadBookTabSpinners()
         }
 
         tabNotas.setOnClickListener {
             notasTab.visibility = View.VISIBLE
             notasBook.visibility = View.GONE
-            loadNotasTabSpinners()
+            loadAnnotations()
         }
     }
 
@@ -177,6 +189,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun getAllBooksWithFilters():List<BookEntity> {
+        val toggleTitle = findViewById<ToggleButton>(R.id.bookToggleTitle)
+        val toggleDate = findViewById<ToggleButton>(R.id.bookToggleDate)
+
+        val rawList = bookDao.getAll()
+
+        val sortedList = when {
+            toggleTitle.isChecked -> rawList.sortedByDescending { it.bookTitle }
+            toggleDate.isChecked -> rawList.sortedBy { it.createdAt }
+            else -> rawList.sortedBy { it.bookTitle }
+        }
+        Log.d("toggles", "${toggleTitle.isChecked} ${toggleDate.isChecked}")
+        sortedList.forEach {
+            Log.d("SORTED", "${it.bookTitle} - ${it.createdAt}")
+        }
+        return sortedList
+    }
+
     // ====== Database Initializer =====
 
     private fun dbInit() {
@@ -188,7 +218,7 @@ class MainActivity : AppCompatActivity() {
     private fun refresh() {
         lifecycleScope.launch {
             val books = withContext(Dispatchers.IO) {
-                bookDao.getAll()
+                getAllBooksWithFilters()
             }.toMutableList()
 
             val recycler = findViewById<RecyclerView>(R.id.bookRecycler)
@@ -200,7 +230,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadBooks() {
         lifecycleScope.launch {
             val books = withContext(Dispatchers.IO) {
-                bookDao.getAll()
+                getAllBooksWithFilters()
             }.toMutableList()
 
             val recycler = findViewById<RecyclerView>(R.id.bookRecycler)
@@ -324,7 +354,19 @@ class MainActivity : AppCompatActivity() {
             val newTitle = findViewById<EditText>(R.id.editTitle).text.toString()
             val newAuthor = findViewById<EditText>(R.id.editAuthor).text.toString()
 
-            val updatedBook = book.copy(bookTitle = newTitle, bookAuthor = newAuthor)
+            val updatedBook = if (selectedImageUri != null) {
+                book.copy(
+                    bookTitle = newTitle,
+                    bookAuthor = newAuthor,
+                    imageUri = copyUriToInternalStorage(this, selectedImageUri as Uri)
+                )
+            } else {
+                book.copy(
+                    bookTitle = newTitle,
+                    bookAuthor = newAuthor,
+                )
+            }
+
             lifecycleScope.launch (Dispatchers.IO){
                 bookDao.update(updatedBook)
             }
@@ -355,17 +397,6 @@ class MainActivity : AppCompatActivity() {
 
 
     // ========== EPUB LOADER ==========
-
-    private fun loadEpubFromAssets(fileName: String) {
-        val inputStream: InputStream = assets.open(fileName)
-        val book = EpubReader().readEpub(inputStream)
-
-        println("Book title: ${book.title}")
-        book.contents.forEachIndexed { index, section ->
-            val html = String(section.data)
-            println("Section ${index + 1}:\n$html")
-        }
-    }
 
     private fun openFilePicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -404,26 +435,24 @@ class MainActivity : AppCompatActivity() {
             // Insert into Room (must be called inside coroutine)
             lifecycleScope.launch (Dispatchers.IO){
                 bookDao.insert(bookEntity)
+                refresh()
             }
 
-            refresh()
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
+    private fun copyUriToInternalStorage(context: Context, uri: Uri): String {
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return ""
+        val file = File(context.filesDir, "selected_image.jpg")
+        file.outputStream().use { output ->
+            inputStream.copyTo(output)
+        }
+        return file.absolutePath
+    }
+
     // ========== SPINNER LOADING ==========
-
-    private fun loadBookTabSpinners() {
-        setupSpinner(R.id.sortAZ, R.array.sort_options)
-        setupSpinner(R.id.sortRecente, R.array.date_options)
-        setupSpinner(R.id.sortCategoria, R.array.category_options)
-    }
-
-    private fun loadNotasTabSpinners() {
-        setupSpinner(R.id.notasAZ, R.array.sort_options)
-        setupSpinner(R.id.notasRecente, R.array.date_options)
-    }
 
     private fun setupSpinner(spinnerId: Int, arrayRes: Int) {
         val spinner = findViewById<Spinner>(spinnerId)
