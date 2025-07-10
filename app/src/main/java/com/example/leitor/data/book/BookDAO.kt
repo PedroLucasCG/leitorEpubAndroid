@@ -23,6 +23,12 @@ interface BookDAO {
     @Query("SELECT * FROM Book")
     fun getAll(): List<BookEntity>
 
+    @Query("SELECT * FROM Book ORDER BY bookTitle COLLATE NOCASE ASC")
+    fun getAllByTitle(): List<BookEntity>
+
+    @Query("SELECT * FROM Book ORDER BY createdAt ASC")
+    fun getAllByCreatedAt(): List<BookEntity>
+
     @Query("SELECT * FROM Book WHERE id = :id")
     fun getById(id: Int): BookEntity?
 

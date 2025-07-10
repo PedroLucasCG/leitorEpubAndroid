@@ -64,26 +64,26 @@
             android:orientation="horizontal"
             android:gravity="center">
 
-            <ToggleButton
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/bookToggleTitle"
                 android:layout_width="wrap_content"
-                android:layout_height="48dp"
+                android:layout_height="40dp"
                 android:minWidth="100dp"
                 android:layout_marginEnd="12dp"
-                android:textOn="Title ▼"
-                android:textOff="Title ▲"
+                android:text="Title ⬤"
                 android:textColor="@android:color/white"
-                android:background="@drawable/toggle_button_selector"/>
+                android:background="@drawable/toggle_button_selector"
+                android:stateListAnimator="@null"
+                android:elevation="0dp" />
 
-            <ToggleButton
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/bookToggleDate"
                 android:layout_width="wrap_content"
-                android:layout_height="48dp"
-                android:minWidth="120dp"
-                android:textOn="Date ▼"
-                android:textOff="Date ▲"
+                android:layout_height="40dp"
+                android:minWidth="100dp"
+                android:text="Date ⬤"
                 android:textColor="@android:color/white"
-                android:background="@drawable/toggle_button_selector"/>
+                android:background="@drawable/toggle_button_selector" />
         </LinearLayout>
     </LinearLayout>
 

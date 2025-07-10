@@ -52,6 +52,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bookDao: BookDAO
     private lateinit var annotationDao: AnnotationDAO
 
+    private var titleSortState = SortState.NONE
+    private var dateSortState = SortState.NONE
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -105,18 +108,37 @@ class MainActivity : AppCompatActivity() {
         val notasTab = findViewById<View>(R.id.notasTab)
         val notasBook = findViewById<View>(R.id.notasBook)
 
-        val bookToggleTitle = findViewById<ToggleButton>(R.id.bookToggleTitle)
-        val bookToggleDate = findViewById<ToggleButton>(R.id.bookToggleDate)
+        val bookToggleTitle = findViewById<Button>(R.id.bookToggleTitle)
+        val bookToggleDate = findViewById<Button>(R.id.bookToggleDate)
 
         bookToggleTitle.setOnClickListener {
-            bookToggleDate.isChecked = false
+            titleSortState = when (titleSortState) {
+                SortState.NONE -> SortState.ASCENDING
+                SortState.ASCENDING -> SortState.DESCENDING
+                SortState.DESCENDING -> SortState.NONE
+            }
+
+            dateSortState = SortState.NONE
+            updateToggleUI(bookToggleTitle, titleSortState, "Title")
+            updateToggleUI(bookToggleDate, dateSortState, "Date")
+
             loadBooks()
         }
 
         bookToggleDate.setOnClickListener {
-            bookToggleTitle.isChecked = false
+            dateSortState = when (dateSortState) {
+                SortState.NONE -> SortState.ASCENDING
+                SortState.ASCENDING -> SortState.DESCENDING
+                SortState.DESCENDING -> SortState.NONE
+            }
+
+            titleSortState = SortState.NONE
+            updateToggleUI(bookToggleDate, dateSortState, "Date")
+            updateToggleUI(bookToggleTitle, titleSortState, "Title")
+
             loadBooks()
         }
+
 
         tabLivros.setOnClickListener {
             notasBook.visibility = View.VISIBLE
@@ -189,26 +211,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getAllBooksWithFilters():List<BookEntity> {
-        val toggleTitle = findViewById<ToggleButton>(R.id.bookToggleTitle)
-        val toggleDate = findViewById<ToggleButton>(R.id.bookToggleDate)
+    private fun getAllBooksWithFilters(): List<BookEntity> {
+        return when {
+            titleSortState == SortState.ASCENDING -> bookDao.getAllByTitle()
+            titleSortState == SortState.DESCENDING -> bookDao.getAllByTitle().reversed()
 
-        val rawList = bookDao.getAll()
+            dateSortState == SortState.ASCENDING -> bookDao.getAllByCreatedAt()
+            dateSortState == SortState.DESCENDING -> bookDao.getAllByCreatedAt().reversed()
 
-        val sortedList = when {
-            toggleTitle.isChecked -> rawList.sortedByDescending { it.bookTitle }
-            toggleDate.isChecked -> rawList.sortedBy { it.createdAt }
-            else -> rawList.sortedBy { it.bookTitle }
+            else -> bookDao.getAllByTitle()
         }
-        Log.d("toggles", "${toggleTitle.isChecked} ${toggleDate.isChecked}")
-        sortedList.forEach {
-            Log.d("SORTED", "${it.bookTitle} - ${it.createdAt}")
+    }
+
+
+    private fun updateToggleUI(toggle: Button, state: SortState, label: String) {
+        when (state) {
+            SortState.NONE -> {
+                toggle.text = "$label ⬤"
+            }
+            SortState.ASCENDING -> {
+                toggle.text = "$label ▲"
+            }
+            SortState.DESCENDING -> {
+                toggle.text = "$label ▼"
+            }
         }
-        return sortedList
     }
 
     // ====== Database Initializer =====
-
     private fun dbInit() {
         val db = AppDatabase.getInstance(applicationContext)
         bookDao = db.bookDao()
@@ -381,6 +411,7 @@ class MainActivity : AppCompatActivity() {
 
                 withContext(Dispatchers.Main) {
                     modal.visibility = View.GONE
+                    loadBooks()
                     refresh()
                 }
             }
