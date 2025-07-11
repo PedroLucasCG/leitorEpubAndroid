@@ -2,7 +2,6 @@ package com.example.leitor
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -19,7 +18,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
-import android.widget.ToggleButton
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -61,6 +59,8 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
     private var dateSortState = SortState.NONE
     private var categoriesList: List<Int> = emptyList()
     private var selectedCategoriesForEdit: List<Int> = emptyList()
+    private var annotationSortDateState = SortState.NONE
+    private var selectedAnnotationBookIds: List<Int> = emptyList()
 
 
     override fun onCategoriesSelected(selected: List<CategoryEntity>) {
@@ -163,6 +163,38 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
             notasBook.visibility = View.GONE
             loadAnnotations()
         }
+
+        val buttonAnnotationDate = findViewById<Button>(R.id.annotationsSortDate)
+        val buttonAnnotationBooks = findViewById<Button>(R.id.annotationsSortByBooks)
+
+        buttonAnnotationDate.setOnClickListener {
+            annotationSortDateState = when (annotationSortDateState) {
+                SortState.NONE -> SortState.ASCENDING
+                SortState.ASCENDING -> SortState.DESCENDING
+                SortState.DESCENDING -> SortState.NONE
+            }
+
+            updateToggleUI(buttonAnnotationDate, annotationSortDateState, "Date")
+            loadAnnotations()
+        }
+
+        buttonAnnotationBooks.setOnClickListener {
+            val dialog = BookSelectionDialogFragment(selectedAnnotationBookIds)
+
+            dialog.listener = object : BookSelectionDialogFragment.OnBooksSelectedListener {
+                override fun onBooksSelected(selected: List<BookEntity>) {
+                    selectedAnnotationBookIds = selected.map { it.id }
+
+                    buttonAnnotationBooks.text = if (selectedAnnotationBookIds.isNotEmpty())
+                        "Books ✓"
+                    else "Books"
+
+                    loadAnnotations()
+                }
+            }
+
+            dialog.show(supportFragmentManager, "bookDialog")
+        }
     }
 
     private fun setupModalButtons() {
@@ -206,13 +238,16 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
             imagePickerLauncher.launch(intent)
         }
 
-        val buttonChoose = findViewById<Button>(R.id.bookChooseCategories)
+        val buttonChooseCategories = findViewById<Button>(R.id.bookChooseCategories)
 
-        buttonChoose.setOnClickListener {
+        buttonChooseCategories.setOnClickListener {
             val dialog = CategorySelectionDialogFragment.newInstance(categoriesList)
             dialog.listener = object : CategorySelectionDialogFragment.OnCategoriesSelectedListener {
                 override fun onCategoriesSelected(selected: List<CategoryEntity>) {
                     categoriesList = selected.map { it.id }
+                    buttonChooseCategories.text = if (categoriesList.isNotEmpty())
+                            "Categories ✓"
+                    else "Categories"
                     loadBooks()
                 }
             }
@@ -262,6 +297,7 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
     }
 
 
+    @SuppressLint("SetTextI18n")
     private fun updateToggleUI(toggle: Button, state: SortState, label: String) {
         when (state) {
             SortState.NONE -> {
@@ -321,9 +357,18 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
     private fun loadAnnotations() {
         val noteListLayout = findViewById<LinearLayout>(R.id.noteList)
 
-        lifecycleScope.launch {
+        lifecycleScope.launch{
             val annotations = withContext(Dispatchers.IO) {
-                annotationDao.getAll()
+                val all = annotationDao.getAll()
+                val filtered = if (selectedAnnotationBookIds.isNotEmpty()) {
+                    all?.filter { selectedAnnotationBookIds.contains(it.bookId) }
+                } else all
+
+                when (annotationSortDateState) {
+                    SortState.ASCENDING -> filtered?.sortedBy { it.createdAt }
+                    SortState.DESCENDING -> filtered?.sortedByDescending { it.createdAt }
+                    else -> filtered
+                }
             }
 
             noteListLayout.removeAllViews()
@@ -339,14 +384,17 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
 
                     lifecycleScope.launch (Dispatchers.IO){
                         val book = bookDao.getById(annotation.bookId)
-                        bookTitleText.text = "${book?.bookTitle}"
-                        contentText.text = annotation.content
-                        meta.text = "seção ${annotation.chapter + 1}"
 
-                        view.setOnClickListener {
-                            openAnnotationModal(annotation)
+                        lifecycleScope.launch (Dispatchers.Main){
+                            bookTitleText.text = "${book?.bookTitle}"
+                            contentText.text = annotation.content
+                            meta.text = "seção ${annotation.chapter + 1}"
+
+                            view.setOnClickListener {
+                                openAnnotationModal(annotation)
+                            }
+                            noteListLayout.addView(view)
                         }
-                        noteListLayout.addView(view)
                     }
 
                 }
@@ -401,6 +449,7 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
     }
 
 
+    @SuppressLint("SetTextI18n")
     private fun openEditModal(book: BookEntity){
         val modal = findViewById<FrameLayout>(R.id.editModalOverlay)
         val recycler = findViewById<RecyclerView>(R.id.bookRecycler)
@@ -419,7 +468,6 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
             coverImage.setImageResource(R.drawable.book_cover)
         }
 
-        // Optional: setup Save button
         findViewById<Button>(R.id.saveButton).setOnClickListener {
             val newTitle = findViewById<EditText>(R.id.editTitle).text.toString()
             val newAuthor = findViewById<EditText>(R.id.editAuthor).text.toString()
@@ -486,9 +534,14 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
                     .newInstance(prev.map { it.id })
 
                 dialog.listener = object : CategorySelectionDialogFragment.OnCategoriesSelectedListener {
+                    @SuppressLint("SetTextI18n")
                     override fun onCategoriesSelected(selected: List<CategoryEntity>) {
                         selectedCategoriesForEdit = selected.map { it.id }
-                        buttonChooseEdit.text = selected.joinToString(", ") { it.categoryName }
+                        if (selected.isEmpty()) {
+                            buttonChooseEdit.text = "Choose Categories for this book"
+                        } else {
+                            buttonChooseEdit.text = selected.joinToString(", ") { it.categoryName }
+                        }
                     }
                 }
 
@@ -504,8 +557,6 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
         }
         startActivity(intent)
     }
-
-
 
     // ========== EPUB LOADER ==========
 
@@ -530,7 +581,7 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
             val coverImage = book.coverImage
             val bookUri = uri.toString()
 
-            val imageUri: String? = coverImage?.let {
+            val imageUri: String = coverImage?.let {
                 val filename = "cover_${System.currentTimeMillis()}.jpg"
                 val file = File(cacheDir, filename)
                 file.outputStream().use { os -> os.write(it.data) }
