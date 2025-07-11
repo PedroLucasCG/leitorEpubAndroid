@@ -393,6 +393,10 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
                             view.setOnClickListener {
                                 openAnnotationModal(annotation)
                             }
+                            view.setOnLongClickListener {
+                                openAnnotationInBook(annotation)
+                                true
+                            }
                             noteListLayout.addView(view)
                         }
                     }
@@ -400,6 +404,17 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
                 }
             }
         }
+    }
+
+    private fun openAnnotationInBook(annotation: BookAnnotationEntity) {
+        val intent = Intent(this, ReaderActivity::class.java).apply {
+            putExtra("bookId", annotation.bookId)
+            putExtra("chapter", annotation.chapter)
+            putExtra("paragraph", annotation.paragraph)
+            putExtra("start", annotation.startSelection)
+            putExtra("end", annotation.endSelection)
+        }
+        startActivity(intent)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

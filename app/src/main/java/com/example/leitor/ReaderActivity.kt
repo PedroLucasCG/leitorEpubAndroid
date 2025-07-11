@@ -40,6 +40,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.leitor.data.AppDatabase
 import com.example.leitor.data.annotation.AnnotationDAO
 import com.example.leitor.data.annotation.BookAnnotationEntity
+import com.example.leitor.data.book.BookDAO
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -59,6 +60,7 @@ class ReaderActivity : AppCompatActivity() {
     private lateinit var imageResources: List<Resource>
     private lateinit var book: Book
     private lateinit var annotationDao: AnnotationDAO
+    private lateinit var bookDao: BookDAO
     private lateinit var prevButton: Button
     private lateinit var nextButton: Button
 
@@ -67,6 +69,11 @@ class ReaderActivity : AppCompatActivity() {
     private lateinit var bookTitle: String
     private lateinit var bookUri: Uri
     private var bookId: Int = -1
+    private var pendingScrollChapter: Int? = null
+    private var pendingScrollParagraph: Int? = null
+    private var pendingScrollStart: Int? = null
+    private var pendingScrollEnd: Int? = null
+
 
     @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,19 +89,41 @@ class ReaderActivity : AppCompatActivity() {
 
         val db = AppDatabase.getInstance(applicationContext)
         annotationDao = db.annotationDao()
-
-        val uriString = intent.getStringExtra("bookUri")
-        bookUri = Uri.parse(uriString)
+        bookDao = db.bookDao()
 
         bookId = intent.getIntExtra("bookId", -1)
 
+        lifecycleScope.launch {
+            val uriString = intent.getStringExtra("bookUri")
+            bookUri = if (!uriString.isNullOrBlank()) {
+                uriString.toUri()
+            } else {
+                withContext(Dispatchers.IO) {
+                    bookDao.getById(bookId)?.bookUri?.toUri()
+                } ?: run {
+                    Toast.makeText(this@ReaderActivity, "Book URI not found", Toast.LENGTH_SHORT).show()
+                    finish()
+                    return@launch
+                }
+            }
+
+            loadBook()
+        }
+
+        pendingScrollChapter = intent.getIntExtra("chapter", -1)
+        if (pendingScrollChapter as Int > -1) {
+            currentChapterIndex = pendingScrollChapter as Int
+        }
+        pendingScrollParagraph = intent.getIntExtra("paragraph", -1)
+        pendingScrollStart = intent.getIntExtra("start", -1)
+        pendingScrollEnd = intent.getIntExtra("end", -1)
+    }
+
+    private fun loadBook() {
         try {
             contentResolver.takePersistableUriPermission(bookUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             val inputStream = contentResolver.openInputStream(bookUri)
             book = EpubReader().readEpub(inputStream)
-
-            sections = book.contents
-            bookTitle = book.title ?: "Livro"
 
             sections = book.contents
             bookTitle = book.title ?: "Livro"
@@ -123,6 +152,7 @@ class ReaderActivity : AppCompatActivity() {
             Toast.makeText(this, "Erro ao carregar livro", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     private fun displayChapter(index: Int) {
         chapterContent.removeAllViews()
@@ -201,6 +231,21 @@ class ReaderActivity : AppCompatActivity() {
                                 }
 
                                 chapterContent.addView(textView)
+
+                                if (pendingScrollChapter == index && pendingScrollParagraph == paragraphIndex) {
+                                    textView.post {
+                                        val layout = textView.layout ?: return@post
+                                        val start = pendingScrollStart ?: 0
+
+                                        val y = layout.getLineTop(layout.getLineForOffset(start))
+                                        chapterContent.scrollTo(0, textView.top + y)
+                                    }
+
+                                    pendingScrollChapter = null
+                                    pendingScrollParagraph = null
+                                    pendingScrollStart = null
+                                    pendingScrollEnd = null
+                                }
                                 paragraphIndex++
                             }
 
