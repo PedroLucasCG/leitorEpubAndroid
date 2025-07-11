@@ -1,0 +1,51 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@drawable/rounded_card_bg"
+    android:padding="16dp">
+
+    <!-- Scrollable category list (left side) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/categoryRecyclerView"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:overScrollMode="ifContentScrolls"
+        android:scrollbars="vertical" />
+
+    <!-- Buttons container (right side) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="left|bottom"
+        android:layout_marginStart="12dp">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/buttonDeleteCategory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/toggle_button_selector"
+            android:text="Delete" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/buttonAddCategory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:background="@drawable/toggle_button_selector"
+            android:text="Add" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/buttonConfirm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Confirm"
+            android:textColor="@android:color/white"
+            android:background="@drawable/toggle_button_selector"
+            android:layout_marginTop="12dp"/>
+    </LinearLayout>
+</LinearLayout>

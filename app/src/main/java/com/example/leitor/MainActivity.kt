@@ -2,6 +2,7 @@ package com.example.leitor
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -41,20 +42,31 @@ import java.io.File
 import androidx.core.net.toUri
 import com.example.leitor.data.annotation.AnnotationDAO
 import com.example.leitor.data.annotation.BookAnnotationEntity
+import com.example.leitor.data.category.CategoryDAO
+import com.example.leitor.data.category.CategoryEntity
+import com.example.leitor.data.crossRef.BookCategoryCrossRef
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCategoriesSelectedListener {
     private lateinit var epubPickerLauncher: ActivityResultLauncher<Intent>
     private lateinit var imagePickerLauncher: ActivityResultLauncher<Intent>
     private lateinit var bookAdapter: BookAdapter
     private var selectedImageUri: Uri? = null
     private lateinit var bookDao: BookDAO
     private lateinit var annotationDao: AnnotationDAO
+    private lateinit var categoryDao: CategoryDAO
 
     private var titleSortState = SortState.NONE
     private var dateSortState = SortState.NONE
+    private var categoriesList: List<Int> = emptyList()
+    private var selectedCategoriesForEdit: List<Int> = emptyList()
 
+
+    override fun onCategoriesSelected(selected: List<CategoryEntity>) {
+        categoriesList = selected.map { it.id }
+        Log.d("MainActivity", "Selected categories: $categoriesList")
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,6 +85,7 @@ class MainActivity : AppCompatActivity() {
 
     // ========== UI CONFIGURATION ==========
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun applyWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -193,6 +206,19 @@ class MainActivity : AppCompatActivity() {
             imagePickerLauncher.launch(intent)
         }
 
+        val buttonChoose = findViewById<Button>(R.id.bookChooseCategories)
+
+        buttonChoose.setOnClickListener {
+            val dialog = CategorySelectionDialogFragment.newInstance(categoriesList)
+            dialog.listener = object : CategorySelectionDialogFragment.OnCategoriesSelectedListener {
+                override fun onCategoriesSelected(selected: List<CategoryEntity>) {
+                    categoriesList = selected.map { it.id }
+                    loadBooks()
+                }
+            }
+
+            dialog.show(supportFragmentManager, "categoryDialog")
+        }
     }
 
     private fun setupAnnotationModal() {
@@ -212,14 +238,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getAllBooksWithFilters(): List<BookEntity> {
-        return when {
-            titleSortState == SortState.ASCENDING -> bookDao.getAllByTitle()
-            titleSortState == SortState.DESCENDING -> bookDao.getAllByTitle().reversed()
+        if (categoriesList.isEmpty()) {
+            return when {
+                titleSortState == SortState.ASCENDING -> bookDao.getAllByTitle()
+                titleSortState == SortState.DESCENDING -> bookDao.getAllByTitle().reversed()
 
-            dateSortState == SortState.ASCENDING -> bookDao.getAllByCreatedAt()
-            dateSortState == SortState.DESCENDING -> bookDao.getAllByCreatedAt().reversed()
+                dateSortState == SortState.ASCENDING -> bookDao.getAllByCreatedAt()
+                dateSortState == SortState.DESCENDING -> bookDao.getAllByCreatedAt().reversed()
 
-            else -> bookDao.getAllByTitle()
+                else -> bookDao.getAllByTitle()
+            }
+        } else {
+            return when {
+                titleSortState == SortState.ASCENDING -> bookDao.getBooksByCategoriesByTitle(categoriesList)
+                titleSortState == SortState.DESCENDING -> bookDao.getBooksByCategoriesByTitle(categoriesList).reversed()
+
+                dateSortState == SortState.ASCENDING -> bookDao.getBooksByCategoriesByCreatedAt(categoriesList)
+                dateSortState == SortState.DESCENDING -> bookDao.getBooksByCategoriesByCreatedAt(categoriesList).reversed()
+
+                else -> bookDao.getBooksByCategories(categoriesList)
+            }
         }
     }
 
@@ -243,6 +281,7 @@ class MainActivity : AppCompatActivity() {
         val db = AppDatabase.getInstance(applicationContext)
         bookDao = db.bookDao()
         annotationDao = db.annotationDao()
+        categoryDao = db.categoryDao()
     }
 
     private fun refresh() {
@@ -365,6 +404,7 @@ class MainActivity : AppCompatActivity() {
     private fun openEditModal(book: BookEntity){
         val modal = findViewById<FrameLayout>(R.id.editModalOverlay)
         val recycler = findViewById<RecyclerView>(R.id.bookRecycler)
+        selectedCategoriesForEdit = emptyList()
         bookAdapter = recycler.adapter as BookAdapter
         modal.visibility = View.VISIBLE
 
@@ -399,6 +439,10 @@ class MainActivity : AppCompatActivity() {
 
             lifecycleScope.launch (Dispatchers.IO){
                 bookDao.update(updatedBook)
+                bookDao.clearCategories(updatedBook.id)
+                selectedCategoriesForEdit.forEach {
+                    bookDao.insertCrossRef(BookCategoryCrossRef(updatedBook.id, it))
+                }
             }
             bookAdapter.updateBook(updatedBook)
             modal.visibility = View.GONE
@@ -416,6 +460,41 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        val buttonChooseEdit = findViewById<TextView>(R.id.bookChooseCategoriesEdit)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val bookWithCategories = bookDao.getBookWithCategories(book.id)
+            val categoryNames = bookWithCategories.categories.map { it.categoryName }
+            val categoryIds = bookWithCategories.categories.map { it.id }
+
+            selectedCategoriesForEdit = categoryIds
+
+            withContext(Dispatchers.Main) {
+                if (categoryNames.isEmpty()) {
+                    buttonChooseEdit.text = "Choose Categories for this book"
+                } else {
+                    buttonChooseEdit.text = categoryNames.joinToString(", ")
+                }
+            }
+        }
+
+        buttonChooseEdit.setOnClickListener {
+            lifecycleScope.launch (Dispatchers.IO){
+                val prev = categoryDao.getBookCategory(book.id)
+                val dialog = CategorySelectionDialogFragment
+                    .newInstance(prev.map { it.id })
+
+                dialog.listener = object : CategorySelectionDialogFragment.OnCategoriesSelectedListener {
+                    override fun onCategoriesSelected(selected: List<CategoryEntity>) {
+                        selectedCategoriesForEdit = selected.map { it.id }
+                        buttonChooseEdit.text = selected.joinToString(", ") { it.categoryName }
+                    }
+                }
+
+                dialog.show(supportFragmentManager, "categoryDialog")
+            }
+        }
     }
 
     private fun openBook(book: BookEntity) {
@@ -425,6 +504,7 @@ class MainActivity : AppCompatActivity() {
         }
         startActivity(intent)
     }
+
 
 
     // ========== EPUB LOADER ==========
@@ -438,6 +518,7 @@ class MainActivity : AppCompatActivity() {
         epubPickerLauncher.launch(intent)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun openEpubFromUri(uri: Uri) {
         try {
             contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)

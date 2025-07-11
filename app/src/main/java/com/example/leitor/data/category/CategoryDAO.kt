@@ -29,4 +29,14 @@ interface CategoryDAO {
     @Transaction
     @Query("SELECT * FROM Category WHERE id = :categoryId")
     fun getCategoryWithBooks(categoryId: Int): CategoryWithBooks
+
+    @Transaction
+    @Query("""
+    SELECT * FROM Category
+    WHERE id IN (
+        SELECT CategoryId FROM BookCategoryCrossRef
+        WHERE bookId IN (:bookId)
+    )
+    """)
+    fun getBookCategory(bookId: Int): List<CategoryEntity>
 }

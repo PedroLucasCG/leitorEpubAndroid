@@ -122,6 +122,27 @@
                 android:inputType="textCapWords"
                 android:layout_marginBottom="24dp" />
 
+            <TextView
+                android:id="@+id/categoryLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Categorias"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/bookChooseCategoriesEdit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Selecionar categorias..."
+                android:background="@drawable/rounded_button_bg"
+                android:textColor="@android:color/white"
+                android:padding="12dp"
+                android:gravity="center_vertical"
+                android:drawableEnd="@drawable/ic_arrow_drop_down"
+                android:layout_marginBottom="24dp"/>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
