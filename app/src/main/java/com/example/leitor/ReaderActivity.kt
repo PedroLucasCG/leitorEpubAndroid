@@ -156,7 +156,7 @@ class ReaderActivity : AppCompatActivity() {
 
     private fun displayChapter(index: Int) {
         chapterContent.removeAllViews()
-        supportActionBar?.title = "$bookTitle – Capítulo ${index + 1}"
+        supportActionBar?.title = "$bookTitle – seção ${index + 1}"
 
         val currentSection = sections[index]
         val rawHtml = String(currentSection.data)
@@ -398,7 +398,7 @@ class ReaderActivity : AppCompatActivity() {
                         val end = selectionEnd
                         val selectedText = text.substring(start, end)
 
-                        modalText.setText(selectedText) // Ensure modalText is EditText
+                        modalText.setText(selectedText)
                         modalDate.text = LocalDate.now().format(
                             DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy", Locale("pt", "BR"))
                         )
@@ -465,7 +465,6 @@ class ReaderActivity : AppCompatActivity() {
                             }
                         }
 
-                        // Optional delete button logic
                         buttonExcluir.setOnClickListener {
                             Toast.makeText(context, "Delete is disabled for new annotations", Toast.LENGTH_SHORT).show()
                         }
@@ -490,7 +489,7 @@ class ReaderActivity : AppCompatActivity() {
             val date = findViewById<TextView>(R.id.modalDate)
             val editText = findViewById<EditText>(R.id.modalText)
 
-            date.text = highlight.createdAt.toString() // Format if needed
+            date.text = highlight.createdAt.toString()
             editText.setText(highlight.content)
 
             modal.visibility = View.VISIBLE
@@ -508,7 +507,7 @@ class ReaderActivity : AppCompatActivity() {
                     annotationDao.delete(highlight)
                     withContext(Dispatchers.Main) {
                         modal.visibility = View.GONE
-                        displayChapter(highlight.chapter) // Refresh display
+                        displayChapter(highlight.chapter)
                     }
                 }
             }

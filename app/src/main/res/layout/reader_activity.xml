@@ -7,33 +7,19 @@
     android:layout_height="match_parent"
     android:background="#103379">
 
-    <!-- Top App Bar -->
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/topAppBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#0e285e"
-        android:paddingTop="40dp"
-        android:elevation="4dp"
-        android:title="Leitura"
-        android:titleTextColor="@android:color/white"
-        app:layout_scrollFlags="scroll|enterAlways"
-        app:titleCentered="true" />
-
     <!-- Content below App Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:layout_marginTop="50dp"
-        android:paddingTop="?attr/actionBarSize"
-        android:paddingBottom="16dp">
+        android:paddingTop="?attr/actionBarSize">
 
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:paddingHorizontal="24dp">
+            android:paddingHorizontal="24dp"
+            android:paddingTop="?attr/actionBarSize">
 
             <LinearLayout
                 android:id="@+id/chapterContent"
