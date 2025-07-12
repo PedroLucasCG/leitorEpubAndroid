@@ -55,6 +55,8 @@
                 android:id="@+id/prevButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@drawable/toggle_button_selector"
+                android:textColor="@android:color/white"
                 android:text="Previous" />
 
             <View android:layout_width="24dp" android:layout_height="0dp" />
@@ -63,6 +65,8 @@
                 android:id="@+id/nextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:background="@drawable/toggle_button_selector"
                 android:text="Next" />
         </LinearLayout>
     </LinearLayout>
