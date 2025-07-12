@@ -78,7 +78,3 @@ As anotações são salvas com:
 O app usa URIs persistentes para manter o acesso ao arquivo EPUB. Isso exige que o usuário selecione o livro via `Intent.ACTION_OPEN_DOCUMENT`.
 
 O EPUB deve conter estrutura HTML válida com tags `<p>`, `<h1>`, `<img>`.
-
-## 📜 Licença
-
-Este projeto está sob a licença MIT. Sinta-se à vontade para utilizar e adaptar.
