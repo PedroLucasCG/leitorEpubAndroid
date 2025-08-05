@@ -5,7 +5,6 @@
     android:background="@drawable/rounded_card_bg"
     android:padding="16dp">
 
-    <!-- Scrollable category list (left side) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/categoryRecyclerView"
         android:layout_width="0dp"
@@ -14,7 +13,6 @@
         android:overScrollMode="ifContentScrolls"
         android:scrollbars="vertical" />
 
-    <!-- Buttons container (right side) -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="match_parent"

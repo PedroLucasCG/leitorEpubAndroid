@@ -198,7 +198,6 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
     }
 
     private fun setupModalButtons() {
-        // add book
         val fabAdd = findViewById<View>(R.id.fabAdd)
         val modalOverlay = findViewById<View>(R.id.modalOverlay)
         val modalView = findViewById<View>(R.id.modalView)
@@ -211,13 +210,12 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
             modalOverlay.visibility = View.GONE
         }
 
-        modalView.setOnClickListener { /* Do nothing to prevent closing */ }
+        modalView.setOnClickListener {  }
 
         findViewById<View>(R.id.buttonBrowse).setOnClickListener {
             openFilePicker()
         }
 
-        // edit book details
         val editModal = findViewById<FrameLayout>(R.id.editModalOverlay)
 
         val editModalContent = findViewById<View>(R.id.editModalContent)
@@ -227,7 +225,6 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
         }
 
         editModalContent.setOnClickListener {
-            // Do nothing
         }
 
         val imageView = findViewById<ImageView>(R.id.editCoverImage)
@@ -265,7 +262,7 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
             annotationModal.visibility = View.GONE
         }
 
-        modalCard.setOnClickListener { /* Do nothing */ }
+        modalCard.setOnClickListener {  }
 
         closeBtn.setOnClickListener {
             annotationModal.visibility = View.GONE
@@ -339,8 +336,7 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
             }.toMutableList()
 
             val recycler = findViewById<RecyclerView>(R.id.bookRecycler)
-            recycler.layoutManager = GridLayoutManager(/* context = */ this@MainActivity, /* spanCount = */
-                2)
+            recycler.layoutManager = GridLayoutManager( this@MainActivity, 2)
             recycler.adapter = BookAdapter(
                 books = books,
                 onClick = { openBook(it) },
@@ -578,7 +574,7 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
     private fun openFilePicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/epub+zip" // EPUB MIME type
+            type = "application/epub+zip"
             putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/epub+zip", "application/octet-stream"))
         }
         epubPickerLauncher.launch(intent)
@@ -610,7 +606,6 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
                 imageUri = imageUri
             )
 
-            // Insert into Room (must be called inside coroutine)
             lifecycleScope.launch (Dispatchers.IO){
                 bookDao.insert(bookEntity)
                 refresh()
@@ -628,18 +623,5 @@ class MainActivity : AppCompatActivity(),  CategorySelectionDialogFragment.OnCat
             inputStream.copyTo(output)
         }
         return file.absolutePath
-    }
-
-    // ========== SPINNER LOADING ==========
-
-    private fun setupSpinner(spinnerId: Int, arrayRes: Int) {
-        val spinner = findViewById<Spinner>(spinnerId)
-        spinner?.adapter = ArrayAdapter.createFromResource(
-            this,
-            arrayRes,
-            R.layout.spinner_item_white
-        ).apply {
-            setDropDownViewResource(R.layout.spinner_dropdown_item_white)
-        }
     }
 }

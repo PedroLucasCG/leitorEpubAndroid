@@ -123,7 +123,6 @@ class CategorySelectionDialogFragment: DialogFragment() {
     }
 
     private fun onCategoryClicked(category: CategoryEntity) {
-        // Show options to edit/delete
         AlertDialog.Builder(requireContext())
             .setTitle("Edit or Delete")
             .setMessage("Edit or delete category '${category.categoryName}'?")
